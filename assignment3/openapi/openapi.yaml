@@ -1,0 +1,453 @@
+openapi: "3.1.0"
+info:
+  title: Task Tracker API
+  version: "1.0.0"
+  description: >
+    A contract-first REST API for managing tasks. This API supports full CRUD
+    operations for tasks and provides a custom statistics endpoint that returns
+    aggregated task data.
+  contact:
+    name: Hogeun Lee
+    email: aa020228@gmail.com
+
+servers:
+  - url: http://localhost:3000
+    description: Local development server
+
+tags:
+  - name: Tasks
+    description: Operations for managing tasks
+  - name: Statistics
+    description: Aggregated and derived task information
+
+paths:
+  /:
+    get:
+      tags:
+        - Tasks
+      summary: List all tasks
+      description: Returns all tasks currently stored in the system.
+      operationId: TaskService_list
+      responses:
+        "200":
+          description: Successfully retrieved all tasks
+          content:
+            application/json:
+              schema:
+                type: array
+                description: Array of task resources
+                items:
+                  $ref: "#/components/schemas/Task"
+        "400":
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+    post:
+      tags:
+        - Tasks
+      summary: Create a new task
+      description: Creates a new task with the provided task data.
+      operationId: TaskService_create
+      requestBody:
+        required: true
+        description: Task creation payload
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TaskCreate"
+      responses:
+        "201":
+          description: Task successfully created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Task"
+        "400":
+          description: Invalid request body or validation failure
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /stats:
+    get:
+      tags:
+        - Statistics
+      summary: Get task statistics
+      description: >
+        Returns aggregated task statistics including total task count,
+        completed task count, overdue task count, average estimated hours,
+        and a breakdown of tasks by status.
+      operationId: TaskService_stats
+      responses:
+        "200":
+          description: Successfully retrieved task statistics
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TaskStats"
+        "400":
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /{id}:
+    get:
+      tags:
+        - Tasks
+      summary: Get a task by ID
+      description: Returns a single task resource identified by its unique ID.
+      operationId: TaskService_get
+      parameters:
+        - $ref: "#/components/parameters/TaskId"
+      responses:
+        "200":
+          description: Successfully retrieved the task
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Task"
+        "400":
+          description: Invalid path parameter
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: Task not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+    patch:
+      tags:
+        - Tasks
+      summary: Partially update a task
+      description: Updates one or more fields of an existing task.
+      operationId: TaskService_update
+      parameters:
+        - $ref: "#/components/parameters/TaskId"
+      requestBody:
+        required: true
+        description: Partial task update payload
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TaskUpdate"
+      responses:
+        "200":
+          description: Task successfully updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Task"
+        "400":
+          description: Invalid request body or path parameter
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: Task not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+    delete:
+      tags:
+        - Tasks
+      summary: Delete a task
+      description: Deletes a task identified by its unique ID.
+      operationId: TaskService_delete
+      parameters:
+        - $ref: "#/components/parameters/TaskId"
+      responses:
+        "200":
+          description: Task successfully deleted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DeleteResponse"
+        "400":
+          description: Invalid path parameter
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: Task not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+components:
+  parameters:
+    TaskId:
+      name: id
+      in: path
+      required: true
+      description: Unique identifier of the task
+      schema:
+        type: string
+        minLength: 1
+      example: task-1
+
+  schemas:
+    Task:
+      type: object
+      description: A task resource stored in the system
+      required:
+        - id
+        - title
+        - assignee
+        - status
+        - priority
+        - estimateHours
+        - dueDate
+      properties:
+        id:
+          type: string
+          description: Auto-generated unique identifier for the task
+          readOnly: true
+          example: task-1
+        title:
+          type: string
+          description: Short title describing the task
+          minLength: 1
+          example: Implement login API
+        assignee:
+          type: string
+          description: Name of the person assigned to the task
+          minLength: 1
+          example: Alice Kim
+        status:
+          type: string
+          description: Current progress status of the task
+          enum:
+            - TODO
+            - IN_PROGRESS
+            - DONE
+          example: IN_PROGRESS
+        priority:
+          type: string
+          description: Priority level of the task
+          enum:
+            - LOW
+            - MEDIUM
+            - HIGH
+          example: HIGH
+        estimateHours:
+          type: integer
+          format: int32
+          description: Estimated number of hours required to complete the task
+          minimum: 1
+          example: 6
+        dueDate:
+          type: string
+          format: date
+          description: Due date for completing the task
+          example: "2026-04-10"
+      example:
+        id: task-1
+        title: Implement login API
+        assignee: Alice Kim
+        status: IN_PROGRESS
+        priority: HIGH
+        estimateHours: 6
+        dueDate: "2026-04-10"
+
+    TaskCreate:
+      type: object
+      description: Input payload used to create a new task
+      required:
+        - title
+        - assignee
+        - status
+        - priority
+        - estimateHours
+        - dueDate
+      properties:
+        title:
+          type: string
+          description: Short title describing the task
+          minLength: 1
+          example: Write unit tests
+        assignee:
+          type: string
+          description: Name of the person assigned to the task
+          minLength: 1
+          example: Bob Lee
+        status:
+          type: string
+          description: Initial progress status of the task
+          enum:
+            - TODO
+            - IN_PROGRESS
+            - DONE
+          example: TODO
+        priority:
+          type: string
+          description: Priority level of the task
+          enum:
+            - LOW
+            - MEDIUM
+            - HIGH
+          example: MEDIUM
+        estimateHours:
+          type: integer
+          format: int32
+          description: Estimated number of hours required to complete the task
+          minimum: 1
+          example: 4
+        dueDate:
+          type: string
+          format: date
+          description: Due date for completing the task
+          example: "2026-04-15"
+
+    TaskUpdate:
+      type: object
+      description: Input payload used to partially update an existing task
+      properties:
+        title:
+          type: string
+          description: Updated task title
+          minLength: 1
+          example: Update API documentation
+        assignee:
+          type: string
+          description: Updated assignee name
+          minLength: 1
+          example: Charlie Park
+        status:
+          type: string
+          description: Updated task status
+          enum:
+            - TODO
+            - IN_PROGRESS
+            - DONE
+          example: DONE
+        priority:
+          type: string
+          description: Updated task priority
+          enum:
+            - LOW
+            - MEDIUM
+            - HIGH
+          example: LOW
+        estimateHours:
+          type: integer
+          format: int32
+          description: Updated estimated completion hours
+          minimum: 1
+          example: 8
+        dueDate:
+          type: string
+          format: date
+          description: Updated due date
+          example: "2026-04-20"
+      minProperties: 1
+      additionalProperties: false
+
+    TaskStats:
+      type: object
+      description: Aggregated statistics derived from the stored tasks
+      required:
+        - totalTasks
+        - completedTasks
+        - overdueTasks
+        - averageEstimateHours
+        - tasksByStatus
+      properties:
+        totalTasks:
+          type: integer
+          format: int32
+          description: Total number of tasks in the system
+          example: 5
+        completedTasks:
+          type: integer
+          format: int32
+          description: Number of tasks with status DONE
+          example: 2
+        overdueTasks:
+          type: integer
+          format: int32
+          description: Number of tasks whose due date has passed and are not done
+          example: 1
+        averageEstimateHours:
+          type: number
+          description: Average estimated hours across all tasks
+          example: 5.4
+        tasksByStatus:
+          type: object
+          description: Count of tasks grouped by status
+          required:
+            - TODO
+            - IN_PROGRESS
+            - DONE
+          properties:
+            TODO:
+              type: integer
+              format: int32
+              description: Number of tasks in TODO status
+              example: 1
+            IN_PROGRESS:
+              type: integer
+              format: int32
+              description: Number of tasks in IN_PROGRESS status
+              example: 2
+            DONE:
+              type: integer
+              format: int32
+              description: Number of tasks in DONE status
+              example: 2
+      example:
+        totalTasks: 5
+        completedTasks: 2
+        overdueTasks: 1
+        averageEstimateHours: 5.4
+        tasksByStatus:
+          TODO: 1
+          IN_PROGRESS: 2
+          DONE: 2
+
+    DeleteResponse:
+      type: object
+      description: Response returned after a successful delete operation
+      required:
+        - message
+      properties:
+        message:
+          type: string
+          description: Confirmation message for deletion
+          example: Task deleted successfully
+      example:
+        message: Task deleted successfully
+
+    ErrorResponse:
+      type: object
+      description: Standard error response schema
+      required:
+        - code
+        - message
+      properties:
+        code:
+          type: integer
+          format: int32
+          description: HTTP status code associated with the error
+          example: 400
+        message:
+          type: string
+          description: Human-readable error message
+          example: Bad Request
+      example:
+        code: 400
+        message: Bad Request
