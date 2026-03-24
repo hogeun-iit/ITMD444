@@ -11,8 +11,10 @@ info:
     email: aa020228@gmail.com
 
 servers:
+  - url: https://itmd444-task.onrender.com
+    description: Production (Render)
   - url: http://localhost:3000
-    description: Local development server
+    description: Local development
 
 tags:
   - name: Tasks
