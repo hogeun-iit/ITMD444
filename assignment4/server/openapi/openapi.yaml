@@ -11,8 +11,8 @@ info:
     email: aa020228@gmail.com
 
 servers:
-  - url: https://itmd444-task.onrender.com
-    description: Production (Render)
+  - url: https://itmd444-assignment4-task.onrender.com
+    description: Production (Render) — Assignment 4; replace with your service URL if different
   - url: http://localhost:3000
     description: Local development
 
