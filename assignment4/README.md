@@ -1,89 +1,79 @@
-# Assignment 4 — Task Tracker (cloud DB + generated client + deploy)
+# Assignment 4 — Task Tracker
 
-Keeps the same OpenAPI contract and Express handlers as Assignment 3, swaps the **data layer** to Prisma + Postgres (Supabase, Neon, etc.), and adds a minimal Vite client that calls the OpenAPI Generator **typescript-fetch** SDK.
+Express API with the same OpenAPI contract as Assignment 3, backed by Postgres through Prisma. The Vite app calls the API only through the OpenAPI Generator `typescript-fetch` client (no ad-hoc `fetch`).
 
 ## Layout
 
-| Path | Description |
-|------|-------------|
-| [`server/`](server/) | Express + `openapi-backend`, Prisma, `/docs`, `/openapi.yaml` |
-| [`generated-client/`](generated-client/) | OpenAPI Generator output (do not edit by hand; regenerate with the script below) |
-| [`client/`](client/) | Vite + TypeScript — uses SDK methods only (no raw `fetch`) |
+| Path | Role |
+|------|------|
+| [`server/`](server/) | Express, `openapi-backend`, Prisma, `/docs`, `/openapi.yaml` |
+| [`generated-client/`](generated-client/) | Regenerated from the spec; run `npm run generate:client` from `server/` |
+| [`client/`](client/) | Vite + TypeScript UI |
 
-## Server — local
+## Server (local)
 
-1. Create a Postgres database (e.g. Supabase or Neon) and copy the **connection string(s)**.
-2. Add them to `server/.env` (see [`server/.env.example`](server/.env.example)).
+1. Provision Postgres (Supabase, Neon, or local).
+2. Copy [`server/.env.example`](server/.env.example) to `server/.env` and set `DATABASE_URL`, `DIRECT_URL`, and optionally `PORT`.
 
-   ```env
-   DATABASE_URL="postgresql://..."
-   DIRECT_URL="postgresql://..."
-   PORT=3000
-   ```
+   On Supabase (Project Settings → Database): use the **transaction pooler** for `DATABASE_URL` (often port `6543`, `pgbouncer=true` in the query string) and the **direct** connection for `DIRECT_URL` (port `5432`) so migrations work. For a single local URL, set both to the same value.
 
-   **Supabase:** In the dashboard go to **Project Settings → Database** and use two connection strings:
-
-   - **`DATABASE_URL`** — **Transaction pooler** (host contains `pooler`, port **6543**). The query string should include `pgbouncer=true` (add it if missing). This is what the running app uses for queries.
-   - **`DIRECT_URL`** — **Direct connection** (host `db.<project-ref>.supabase.co`, port **5432**). Prisma uses this for **migrations** (`prisma migrate`).
-
-   **Local Postgres only:** If a single direct URL on port 5432 is enough, you may set **`DATABASE_URL` and `DIRECT_URL` to the same value**.
-
-3. Migrate and seed:
+3. Migrate, seed, run:
 
    ```bash
    cd server
    npm ci
    npx prisma migrate deploy
    npm run db:seed
-   ```
-
-4. Run:
-
-   ```bash
    npm run dev
    ```
 
    - API: `http://localhost:3000/`
-   - Swagger UI: `http://localhost:3000/docs`
-   - Spec: `http://localhost:3000/openapi.yaml`
+   - Swagger: `http://localhost:3000/docs`
+   - Spec: `/openapi.yaml` (JSON: `/openapi.json`)
 
-## Server — Render (Assignment 4 URL)
+## Server (Render)
 
-1. New Web Service → connect this repo, **Root Directory** `assignment4/server`.
-2. **Build command:** `npm ci && npx prisma migrate deploy && npm run build`
-3. **Start command:** `npm start`
-4. **Environment:** Set `DATABASE_URL` (Supabase **transaction pooler** / 6543), `DIRECT_URL` (**direct** / 5432), and `NODE_VERSION` **20** (recommended). Hosted platforms often **cannot** reach Supabase on port **5432** from the app runtime, so the app typically uses the **pooler** URL for `DATABASE_URL` while migrations still need `DIRECT_URL` for schema changes.
-5. After deploy, set `servers[0].url` in [`server/openapi/openapi.yaml`](server/openapi/openapi.yaml) to the real public URL (current placeholder: `https://itmd444-assignment4-task.onrender.com`).
-6. Run `npm run db:seed` once in the Render Shell if you need seed data (or seed locally using the same `DATABASE_URL`).
+1. Web Service from this repo, **Root Directory** `assignment4/server`.
+2. **Build:** `npm ci && npx prisma migrate deploy && npm run build`
+3. **Start:** `npm start`
+4. **Env:** `DATABASE_URL` (pooler URL on Supabase), `DIRECT_URL` (direct URL for `prisma migrate`). Set `NODE_VERSION` to `20` if the platform needs it.
 
-## Regenerating the client
+5. After deploy, set the first `servers` URL in [`server/openapi/openapi.yaml`](server/openapi/openapi.yaml) to your public API origin, then regenerate the client if others rely on the committed spec.
 
-After you change `openapi.yaml`:
+6. Run `npm run db:seed` once in the Render shell if you want seeded data in production.
+
+## Regenerate the client
+
+When the OpenAPI file changes:
 
 ```bash
 cd server
 npm run generate:client
 ```
 
-Output always goes to `../generated-client/`.
+Output: `../generated-client/`.
 
-## Client — local
+## Client (local)
 
 ```bash
 cd client
 cp .env.example .env
-# Set VITE_API_BASE_URL in .env to your local or deployed API
+```
+
+Set `VITE_API_BASE_URL` to the API origin (no trailing `/`). Then:
+
+```bash
 npm ci
 npm run dev
 ```
 
-## Client — Vercel
+## Client (Vercel)
 
-- Project **Root Directory:** `assignment4/client`
-- Environment variable: `VITE_API_BASE_URL` = deployed API base URL (no trailing `/`)
+- **Root Directory:** `assignment4/client`
+- **Env:** `VITE_API_BASE_URL` = deployed API base URL
 
 ## CI
 
-Pushes under `assignment4/**` run `npm ci` and `npm run build` for both the server package and the client (see `.github/workflows/assignment4-ci.yml`).
+[`.github/workflows/assignment4-ci.yml`](../.github/workflows/assignment4-ci.yml) runs `npm ci` and `npm run build` for `assignment4/server` and `assignment4/client` when paths under `assignment4/` change.
 
-If an old `assignment4/backend` directory still exists alongside `server/`, delete it so only `assignment4/server/` remains (leftover from a folder rename).
+Remove any leftover `assignment4/backend` folder if it still exists next to `server/` (rename artifact).
