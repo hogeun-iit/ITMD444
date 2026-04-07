@@ -20,7 +20,13 @@ Single table `tasks` (Prisma model `Task`):
 
 ## Environment variables
 
-See [`./.env.example`](./.env.example). Required: `DATABASE_URL`.
+See [`./.env.example`](./.env.example). Prisma is configured with two URLs (see `prisma/schema.prisma`):
+
+| Variable | Role |
+|----------|------|
+| **`DATABASE_URL`** | Runtime queries. With **Supabase**, use the **transaction pooler** (port **6543**, `pgbouncer=true` in the URL). |
+| **`DIRECT_URL`** | **Migrations** (`prisma migrate`). Use the **direct** connection (port **5432**). For local Postgres only, you can set this **equal to** `DATABASE_URL`. |
+| **`PORT`** | Optional; default **3000**. |
 
 ## Run locally
 
@@ -51,6 +57,6 @@ npm run dev
 - **Root Directory:** `assignment4/server`
 - **Build:** `npm ci && npx prisma migrate deploy && npm run build`
 - **Start:** `npm start`
-- **Env:** `DATABASE_URL` (Supabase or other Postgres connection string)
+- **Env:** `DATABASE_URL` (pooler URL on Supabase), `DIRECT_URL` (direct URL for migrations), `NODE_VERSION` 20 recommended.
 
 After deploy, set the first entry under `servers` in `openapi/openapi.yaml` to your public URL.

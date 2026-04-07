@@ -7,26 +7,125 @@
   </head>
   <body>
     <main class="wrap">
-      <h1>Task Tracker (generated SDK)</h1>
+      <h1>Task Tracker</h1>
       <p class="hint">
-        OpenAPI Generator <code>typescript-fetch</code> — no raw
-        <code>fetch</code> in app code.
+        Uses the generated OpenAPI SDK only (<code>TasksApi</code>,
+        <code>StatisticsApi</code>) — no raw <code>fetch</code>.
       </p>
-      <section class="actions">
-        <button id="btn-list" type="button">List tasks</button>
-        <button id="btn-create" type="button">Create demo task</button>
-        <div class="row">
-          <input
-            id="delete-id"
-            type="text"
-            placeholder="task id to delete"
-            aria-label="Task id to delete"
-          />
-          <button id="btn-delete" type="button">Delete</button>
-        </div>
-        <button id="btn-stats" type="button">Stats (custom)</button>
+
+      <div id="status-msg" class="status-msg" role="status" aria-live="polite"></div>
+
+      <section class="panel" aria-labelledby="stats-heading">
+        <h2 id="stats-heading">Statistics (<code>GET /stats</code>)</h2>
+        <p class="panel-hint">Custom aggregation endpoint — refresh after changing tasks.</p>
+        <button type="button" id="btn-refresh-stats">Refresh stats</button>
+        <dl class="stats-grid" id="stats-display">
+          <div><dt>Total tasks</dt><dd id="stat-total">—</dd></div>
+          <div><dt>Completed</dt><dd id="stat-done">—</dd></div>
+          <div><dt>Overdue (not done)</dt><dd id="stat-overdue">—</dd></div>
+          <div><dt>Avg. estimate (h)</dt><dd id="stat-avg">—</dd></div>
+          <div><dt>TODO / In progress / Done</dt><dd id="stat-by-status">—</dd></div>
+        </dl>
       </section>
-      <pre id="output" class="out" aria-live="polite"></pre>
+
+      <section class="panel" aria-labelledby="create-heading">
+        <h2 id="create-heading">New task (<code>POST /</code>)</h2>
+        <form id="form-create" class="form-grid">
+          <label>Title <input name="title" type="text" required minlength="1" /></label>
+          <label>Assignee <input name="assignee" type="text" required minlength="1" /></label>
+          <label
+            >Status
+            <select name="status" required>
+              <option value="TODO">TODO</option>
+              <option value="IN_PROGRESS">In progress</option>
+              <option value="DONE">Done</option>
+            </select>
+          </label>
+          <label
+            >Priority
+            <select name="priority" required>
+              <option value="LOW">Low</option>
+              <option value="MEDIUM" selected>Medium</option>
+              <option value="HIGH">High</option>
+            </select>
+          </label>
+          <label
+            >Estimate (hours)
+            <input name="estimateHours" type="number" min="1" step="1" value="4" required
+          /></label>
+          <label
+            >Due date
+            <input name="dueDate" type="date" required
+          /></label>
+          <div class="form-actions">
+            <button type="submit">Create task</button>
+          </div>
+        </form>
+      </section>
+
+      <section class="panel" aria-labelledby="list-heading">
+        <h2 id="list-heading">All tasks (<code>GET /</code>)</h2>
+        <button type="button" id="btn-refresh-list">Refresh list</button>
+        <div class="table-wrap">
+          <table class="tasks-table">
+            <thead>
+              <tr>
+                <th>Title</th>
+                <th>Assignee</th>
+                <th>Status</th>
+                <th>Priority</th>
+                <th>Due</th>
+                <th>Hours</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="tasks-tbody"></tbody>
+          </table>
+        </div>
+        <p id="tasks-empty" class="empty-hint hidden">No tasks yet. Create one above or refresh.</p>
+      </section>
+
+      <section class="panel hidden" id="detail-panel" aria-labelledby="detail-heading">
+        <h2 id="detail-heading">Selected task</h2>
+        <p class="panel-hint">
+          Loaded with <code>GET /{id}</code>. Edit uses <code>PATCH /{id}</code>; delete uses
+          <code>DELETE /{id}</code>.
+        </p>
+        <p><strong>ID:</strong> <code id="detail-id"></code></p>
+        <form id="form-edit" class="form-grid">
+          <label>Title <input name="title" type="text" required minlength="1" /></label>
+          <label>Assignee <input name="assignee" type="text" required minlength="1" /></label>
+          <label
+            >Status
+            <select name="status" required>
+              <option value="TODO">TODO</option>
+              <option value="IN_PROGRESS">In progress</option>
+              <option value="DONE">Done</option>
+            </select>
+          </label>
+          <label
+            >Priority
+            <select name="priority" required>
+              <option value="LOW">Low</option>
+              <option value="MEDIUM">Medium</option>
+              <option value="HIGH">High</option>
+            </select>
+          </label>
+          <label
+            >Estimate (hours)
+            <input name="estimateHours" type="number" min="1" step="1" required
+          /></label>
+          <label
+            >Due date
+            <input name="dueDate" type="date" required
+          /></label>
+          <div class="form-actions">
+            <button type="submit">Save changes</button>
+            <button type="button" id="btn-delete-selected" class="btn-danger">Delete task</button>
+            <button type="button" id="btn-close-detail">Close</button>
+          </div>
+        </form>
+      </section>
     </main>
     <script type="module" src="/src/main.ts"></script>
   </body>
