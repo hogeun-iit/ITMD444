@@ -1,12 +1,10 @@
-# Generated client (OpenAPI Generator)
+# Generated TypeScript client
 
-This folder contains code generated from [`../server/openapi/openapi.yaml`](../server/openapi/openapi.yaml) using **OpenAPI Generator** with the `typescript-fetch` target.
-
-Regenerate:
+Produced from [`../server/openapi/openapi.yaml`](../server/openapi/openapi.yaml) with OpenAPI Generator (`typescript-fetch`).
 
 ```bash
 cd ../server
 npm run generate:client
 ```
 
-Do not edit generated files by hand. Change the spec and regenerate.
+Edit the spec in `server/`, then regenerate. Avoid hand-editing files here.
