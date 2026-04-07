@@ -32,7 +32,6 @@ const statusEl = document.querySelector<HTMLDivElement>("#status-msg")!;
 const tasksTbody = document.querySelector<HTMLTableSectionElement>("#tasks-tbody")!;
 const tasksEmpty = document.querySelector<HTMLParagraphElement>("#tasks-empty")!;
 const detailPanel = document.querySelector<HTMLElement>("#detail-panel")!;
-const detailIdEl = document.querySelector<HTMLElement>("#detail-id")!;
 const formCreate = document.querySelector<HTMLFormElement>("#form-create")!;
 const formEdit = document.querySelector<HTMLFormElement>("#form-edit")!;
 
@@ -125,6 +124,14 @@ function dueInputValue(task: Task): string {
   return task.dueDate.toISOString().slice(0, 10);
 }
 
+/** Accepts YYYY-MM-DD only; avoids locale-specific date pickers. */
+function parseDueDateInput(s: string): Date | null {
+  const t = s.trim();
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(t)) return null;
+  const d = new Date(`${t}T12:00:00.000Z`);
+  return Number.isNaN(d.getTime()) ? null : d;
+}
+
 function fillEditForm(task: Task): void {
   const f = formEdit;
   (f.elements.namedItem("title") as HTMLInputElement).value = task.title;
@@ -142,7 +149,6 @@ function hideDetail(): void {
 
 function showDetail(task: Task): void {
   selectedTaskId = task.id;
-  detailIdEl.textContent = task.id;
   fillEditForm(task);
   detailPanel.classList.remove("hidden");
   detailPanel.scrollIntoView({ behavior: "smooth", block: "nearest" });
@@ -179,13 +185,12 @@ function renderTaskRows(tasks: Task[]): void {
     const btnOpen = document.createElement("button");
     btnOpen.type = "button";
     btnOpen.textContent = "Open";
-    btnOpen.title = "GET /{id} — load full task for edit or delete";
     btnOpen.addEventListener("click", () => {
       void (async () => {
         try {
           const fresh = await tasksApi.taskServiceGet({ id: task.id });
           showDetail(fresh);
-          setStatus("Loaded task via GET /{id}.", "ok");
+          setStatus("", "neutral");
         } catch (e) {
           setStatus(await formatApiError(e), "error");
         }
@@ -196,7 +201,6 @@ function renderTaskRows(tasks: Task[]): void {
     btnDel.type = "button";
     btnDel.textContent = "Delete";
     btnDel.className = "btn-danger";
-    btnDel.title = "DELETE /{id}";
     btnDel.addEventListener("click", () => {
       if (!confirm(`Delete task "${task.title}"?`)) return;
       void (async () => {
@@ -239,17 +243,17 @@ async function refreshStats(): Promise<void> {
 
 document.querySelector("#btn-refresh-list")!.addEventListener("click", () => {
   void (async () => {
-    setStatus("Loading tasks…");
+    setStatus("Loading…");
     await refreshList();
-    setStatus("List updated.", "ok");
+    setStatus("", "neutral");
   })();
 });
 
 document.querySelector("#btn-refresh-stats")!.addEventListener("click", () => {
   void (async () => {
-    setStatus("Loading stats…");
+    setStatus("Loading…");
     await refreshStats();
-    setStatus("Stats updated.", "ok");
+    setStatus("", "neutral");
   })();
 });
 
@@ -261,8 +265,9 @@ formCreate.addEventListener("submit", (ev) => {
   const dueStr = String(fd.get("dueDate") ?? "");
   const hours = Number(fd.get("estimateHours"));
 
-  if (!title || !assignee || !dueStr || !Number.isFinite(hours) || hours < 1) {
-    setStatus("Fill all create fields (estimate ≥ 1).", "error");
+  const dueDate = parseDueDateInput(dueStr);
+  if (!title || !assignee || !dueDate || !Number.isFinite(hours) || hours < 1) {
+    setStatus("Check all fields: due date must be YYYY-MM-DD.", "error");
     return;
   }
 
@@ -275,13 +280,13 @@ formCreate.addEventListener("submit", (ev) => {
           status: statusToCreateEnum(String(fd.get("status"))),
           priority: priorityToCreateEnum(String(fd.get("priority"))),
           estimateHours: hours,
-          dueDate: new Date(`${dueStr}T12:00:00.000Z`),
+          dueDate,
         },
       });
       formCreate.reset();
       (formCreate.elements.namedItem("estimateHours") as HTMLInputElement).value = "4";
       (formCreate.elements.namedItem("priority") as HTMLSelectElement).value = "MEDIUM";
-      setStatus("Task created (POST /).", "ok");
+      setStatus("Task created.", "ok");
       await refreshList();
       await refreshStats();
     } catch (e) {
@@ -300,8 +305,9 @@ formEdit.addEventListener("submit", (ev) => {
   const dueStr = String(fd.get("dueDate") ?? "");
   const hours = Number(fd.get("estimateHours"));
 
-  if (!title || !assignee || !dueStr || !Number.isFinite(hours) || hours < 1) {
-    setStatus("Edit form: all fields required.", "error");
+  const dueDate = parseDueDateInput(dueStr);
+  if (!title || !assignee || !dueDate || !Number.isFinite(hours) || hours < 1) {
+    setStatus("Check all fields: due date must be YYYY-MM-DD.", "error");
     return;
   }
 
@@ -315,11 +321,11 @@ formEdit.addEventListener("submit", (ev) => {
           status: statusToUpdateEnum(String(fd.get("status"))),
           priority: priorityToUpdateEnum(String(fd.get("priority"))),
           estimateHours: hours,
-          dueDate: new Date(`${dueStr}T12:00:00.000Z`),
+          dueDate,
         },
       });
       showDetail(updated);
-      setStatus("Task updated (PATCH /{id}).", "ok");
+      setStatus("Changes saved.", "ok");
       await refreshList();
       await refreshStats();
     } catch (e) {
@@ -335,7 +341,7 @@ document.querySelector("#btn-delete-selected")!.addEventListener("click", () => 
     try {
       await tasksApi.taskServiceDelete({ id: selectedTaskId });
       hideDetail();
-      setStatus("Task deleted (DELETE /{id}).", "ok");
+      setStatus("Task deleted.", "ok");
       await refreshList();
       await refreshStats();
     } catch (e) {
@@ -346,12 +352,12 @@ document.querySelector("#btn-delete-selected")!.addEventListener("click", () => 
 
 document.querySelector("#btn-close-detail")!.addEventListener("click", () => {
   hideDetail();
-  setStatus("Detail closed.");
+  setStatus("", "neutral");
 });
 
 void (async () => {
   setStatus("Loading…");
   await refreshList();
   await refreshStats();
-  setStatus("Ready. Use Refresh buttons or create a task.", "ok");
+  setStatus("", "neutral");
 })();

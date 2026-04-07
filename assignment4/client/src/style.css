@@ -26,12 +26,6 @@ h2 {
   margin: 0 0 0.5rem;
 }
 
-.hint,
-.panel-hint {
-  font-size: 0.9rem;
-  color: #444;
-  margin: 0.25rem 0 0.75rem;
-}
 
 .empty-hint {
   font-size: 0.9rem;

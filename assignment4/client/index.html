@@ -3,21 +3,16 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Task Tracker — Assignment 4 client</title>
+    <title>Task Tracker</title>
   </head>
   <body>
     <main class="wrap">
       <h1>Task Tracker</h1>
-      <p class="hint">
-        Uses the generated OpenAPI SDK only (<code>TasksApi</code>,
-        <code>StatisticsApi</code>) — no raw <code>fetch</code>.
-      </p>
 
       <div id="status-msg" class="status-msg" role="status" aria-live="polite"></div>
 
       <section class="panel" aria-labelledby="stats-heading">
-        <h2 id="stats-heading">Statistics (<code>GET /stats</code>)</h2>
-        <p class="panel-hint">Custom aggregation endpoint — refresh after changing tasks.</p>
+        <h2 id="stats-heading">Statistics</h2>
         <button type="button" id="btn-refresh-stats">Refresh stats</button>
         <dl class="stats-grid" id="stats-display">
           <div><dt>Total tasks</dt><dd id="stat-total">—</dd></div>
@@ -29,7 +24,7 @@
       </section>
 
       <section class="panel" aria-labelledby="create-heading">
-        <h2 id="create-heading">New task (<code>POST /</code>)</h2>
+        <h2 id="create-heading">New task</h2>
         <form id="form-create" class="form-grid">
           <label>Title <input name="title" type="text" required minlength="1" /></label>
           <label>Assignee <input name="assignee" type="text" required minlength="1" /></label>
@@ -55,8 +50,17 @@
           /></label>
           <label
             >Due date
-            <input name="dueDate" type="date" required
-          /></label>
+            <input
+              name="dueDate"
+              type="text"
+              required
+              placeholder="YYYY-MM-DD"
+              pattern="\d{4}-\d{2}-\d{2}"
+              maxlength="10"
+              autocomplete="off"
+              title="Format: YYYY-MM-DD"
+            />
+          </label>
           <div class="form-actions">
             <button type="submit">Create task</button>
           </div>
@@ -64,7 +68,7 @@
       </section>
 
       <section class="panel" aria-labelledby="list-heading">
-        <h2 id="list-heading">All tasks (<code>GET /</code>)</h2>
+        <h2 id="list-heading">All tasks</h2>
         <button type="button" id="btn-refresh-list">Refresh list</button>
         <div class="table-wrap">
           <table class="tasks-table">
@@ -86,12 +90,7 @@
       </section>
 
       <section class="panel hidden" id="detail-panel" aria-labelledby="detail-heading">
-        <h2 id="detail-heading">Selected task</h2>
-        <p class="panel-hint">
-          Loaded with <code>GET /{id}</code>. Edit uses <code>PATCH /{id}</code>; delete uses
-          <code>DELETE /{id}</code>.
-        </p>
-        <p><strong>ID:</strong> <code id="detail-id"></code></p>
+        <h2 id="detail-heading">Edit task</h2>
         <form id="form-edit" class="form-grid">
           <label>Title <input name="title" type="text" required minlength="1" /></label>
           <label>Assignee <input name="assignee" type="text" required minlength="1" /></label>
@@ -117,8 +116,17 @@
           /></label>
           <label
             >Due date
-            <input name="dueDate" type="date" required
-          /></label>
+            <input
+              name="dueDate"
+              type="text"
+              required
+              placeholder="YYYY-MM-DD"
+              pattern="\d{4}-\d{2}-\d{2}"
+              maxlength="10"
+              autocomplete="off"
+              title="Format: YYYY-MM-DD"
+            />
+          </label>
           <div class="form-actions">
             <button type="submit">Save changes</button>
             <button type="button" id="btn-delete-selected" class="btn-danger">Delete task</button>
