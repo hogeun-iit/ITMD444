@@ -1,0 +1,27 @@
+{
+  "name": "tubedeck-fullstack",
+  "version": "1.0.0",
+  "private": true,
+  "description": "TubeDeck — PRD 기반 마이크로서비스 풀스택 (Gateway GraphQL + Next.js)",
+  "engines": {
+    "node": ">=20"
+  },
+  "workspaces": [
+    "apps/*",
+    "services/*"
+  ],
+  "scripts": {
+    "dev:auth": "npm run dev -w @tubedeck/auth-service",
+    "dev:queue": "npm run dev -w @tubedeck/queue-service",
+    "dev:video": "npm run dev -w @tubedeck/video-service",
+    "dev:analysis": "npm run dev -w @tubedeck/analysis-service",
+    "dev:analytics": "npm run dev -w @tubedeck/analytics-service",
+    "dev:gateway": "npm run dev -w @tubedeck/gateway",
+    "dev:web": "npm run dev -w @tubedeck/web",
+    "build": "npm run build --workspaces --if-present",
+    "test": "npm run test --workspaces --if-present",
+    "lint": "npm run lint --workspaces --if-present",
+    "db:migrate:all": "npm run db:migrate -w @tubedeck/auth-service && npm run db:migrate -w @tubedeck/queue-service && npm run db:migrate -w @tubedeck/video-service && npm run db:migrate -w @tubedeck/analysis-service",
+    "generate:all": "npm run generate -w @tubedeck/auth-service && npm run generate -w @tubedeck/queue-service && npm run generate -w @tubedeck/video-service && npm run generate -w @tubedeck/analysis-service"
+  }
+}

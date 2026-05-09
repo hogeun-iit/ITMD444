@@ -1,0 +1,64 @@
+generator client {
+  provider        = "prisma-client-js"
+  previewFeatures = ["multiSchema"]
+  output          = "../src/generated/prisma"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+  schemas   = ["tubedeck_queue"]
+}
+
+model Deck {
+  id             String   @id @default(uuid())
+  userId         String   @map("user_id")
+  name           String
+  description    String?
+  icon           String?
+  color          String?
+  defaultCadence String?  @map("default_cadence")
+  sortOrder      Int      @default(0) @map("sort_order")
+  queueMode      String   @default("FIFO") @map("queue_mode")
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+
+  items QueueItem[]
+
+  @@index([userId])
+  @@schema("tubedeck_queue")
+  @@map("decks")
+}
+
+model QueueItem {
+  id           String   @id @default(uuid())
+  deckId       String   @map("deck_id")
+  deck         Deck     @relation(fields: [deckId], references: [id], onDelete: Cascade)
+  videoId      String   @map("video_id")
+  position     Int      @default(0)
+  pinned       Boolean  @default(false)
+  favoriteRank Int      @default(0) @map("favorite_rank")
+  archived     Boolean  @default(false)
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  @@unique([deckId, videoId])
+  @@index([deckId, position])
+  @@schema("tubedeck_queue")
+  @@map("queue_items")
+}
+
+model ReviewLog {
+  id        String   @id @default(uuid())
+  userId    String   @map("user_id")
+  videoId   String   @map("video_id")
+  deckId    String   @map("deck_id")
+  action    String
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([userId])
+  @@index([deckId])
+  @@schema("tubedeck_queue")
+  @@map("review_logs")
+}

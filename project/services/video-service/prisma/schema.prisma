@@ -1,0 +1,36 @@
+generator client {
+  provider        = "prisma-client-js"
+  previewFeatures = ["multiSchema"]
+  output          = "../src/generated/prisma"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+  schemas   = ["tubedeck_video"]
+}
+
+model Video {
+  id               String    @id @default(uuid())
+  userId           String    @map("user_id")
+  deckId           String    @map("deck_id")
+  youtubeVideoId   String    @map("youtube_video_id")
+  title            String
+  description      String    @default("")
+  channelTitle     String    @default("") @map("channel_title")
+  thumbnailUrl     String?   @map("thumbnail_url")
+  durationSec      Int?      @map("duration_sec")
+  publishedAt      DateTime? @map("published_at")
+  transcriptStatus String    @default("METADATA_ONLY") @map("transcript_status")
+  transcriptText   String?   @map("transcript_text") @db.Text
+  archived         Boolean   @default(false)
+  createdAt        DateTime  @default(now()) @map("created_at")
+  updatedAt        DateTime  @updatedAt @map("updated_at")
+
+  @@unique([deckId, youtubeVideoId])
+  @@index([userId])
+  @@index([deckId])
+  @@schema("tubedeck_video")
+  @@map("videos")
+}

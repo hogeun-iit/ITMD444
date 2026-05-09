@@ -1,0 +1,73 @@
+name: TubeDeck Project CI
+
+on:
+  push:
+    paths:
+      - "project/**"
+      - ".github/workflows/tubedeck-project-ci.yml"
+  pull_request:
+    paths:
+      - "project/**"
+      - ".github/workflows/tubedeck-project-ci.yml"
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: project
+
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: tubedeck
+          POSTGRES_PASSWORD: tubedeck
+          POSTGRES_DB: tubedeck
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U tubedeck -d tubedeck"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    env:
+      DATABASE_URL: postgresql://tubedeck:tubedeck@localhost:5432/tubedeck
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: project/package-lock.json
+
+      - name: Install
+        run: npm install
+
+      - name: Prisma generate (all services)
+        run: npm run generate:all
+
+      - name: Prisma migrate (all services)
+        run: |
+          npm run db:migrate -w @tubedeck/auth-service
+          npm run db:migrate -w @tubedeck/queue-service
+          npm run db:migrate -w @tubedeck/video-service
+          npm run db:migrate -w @tubedeck/analysis-service
+
+      - name: Unit tests (workspaces)
+        run: npm test --workspaces --if-present
+
+      - name: Build gateway
+        run: npm run build -w @tubedeck/gateway
+
+      - name: Build web (placeholder Google env)
+        env:
+          AUTH_SECRET: ci-auth-secret-ci-auth-secret-ci
+          AUTH_GOOGLE_ID: dummy.apps.googleusercontent.com
+          AUTH_GOOGLE_SECRET: dummy
+          GATEWAY_URL: http://127.0.0.1:4000
+          AUTH_SERVICE_URL: http://127.0.0.1:4001
+        run: npm run build -w @tubedeck/web

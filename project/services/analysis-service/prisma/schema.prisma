@@ -1,0 +1,30 @@
+generator client {
+  provider        = "prisma-client-js"
+  previewFeatures = ["multiSchema"]
+  output          = "../src/generated/prisma"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+  schemas   = ["tubedeck_analysis"]
+}
+
+model VideoAnalysis {
+  id                 String   @id @default(uuid())
+  videoId            String   @unique @map("video_id")
+  summary            String?  @db.Text
+  keyTakeaways       String?  @map("key_takeaways") @db.Text
+  suggestedTags      String?  @map("suggested_tags") @db.Text
+  difficulty         String?
+  recommendedDeckId  String?  @map("recommended_deck_id")
+  reviewQuestions    String?  @map("review_questions") @db.Text
+  estimatedValue     String?  @map("estimated_value")
+  createdAt          DateTime @default(now()) @map("created_at")
+  updatedAt          DateTime @updatedAt @map("updated_at")
+
+  @@index([videoId])
+  @@schema("tubedeck_analysis")
+  @@map("video_analyses")
+}

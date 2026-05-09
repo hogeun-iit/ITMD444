@@ -1,0 +1,130 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: tubedeck
+      POSTGRES_PASSWORD: tubedeck
+      POSTGRES_DB: tubedeck
+    ports:
+      - "5432:5432"
+    volumes:
+      - tubedeck_pg:/var/lib/postgresql/data
+      - ./docker-init:/docker-entrypoint-initdb.d:ro
+
+  auth-service:
+    build:
+      context: ./services/auth-service
+      dockerfile: Dockerfile
+    environment:
+      DATABASE_URL: ${DATABASE_URL:-postgresql://tubedeck:tubedeck@postgres:5432/tubedeck}
+      DIRECT_URL: ${DIRECT_URL:-postgresql://tubedeck:tubedeck@postgres:5432/tubedeck}
+      PORT: 4001
+      LOG_LEVEL: info
+    ports:
+      - "4001:4001"
+    depends_on:
+      - postgres
+
+  queue-service:
+    build:
+      context: ./services/queue-service
+      dockerfile: Dockerfile
+    environment:
+      DATABASE_URL: ${DATABASE_URL:-postgresql://tubedeck:tubedeck@postgres:5432/tubedeck}
+      DIRECT_URL: ${DIRECT_URL:-postgresql://tubedeck:tubedeck@postgres:5432/tubedeck}
+      PORT: 4002
+      LOG_LEVEL: info
+    ports:
+      - "4002:4002"
+    depends_on:
+      - postgres
+
+  video-service:
+    build:
+      context: ./services/video-service
+      dockerfile: Dockerfile
+    environment:
+      DATABASE_URL: ${DATABASE_URL:-postgresql://tubedeck:tubedeck@postgres:5432/tubedeck}
+      DIRECT_URL: ${DIRECT_URL:-postgresql://tubedeck:tubedeck@postgres:5432/tubedeck}
+      PORT: 4003
+      LOG_LEVEL: info
+      YOUTUBE_API_KEY: ${YOUTUBE_API_KEY:-}
+    ports:
+      - "4003:4003"
+    depends_on:
+      - postgres
+
+  analysis-service:
+    build:
+      context: ./services/analysis-service
+      dockerfile: Dockerfile
+    environment:
+      DATABASE_URL: ${DATABASE_URL:-postgresql://tubedeck:tubedeck@postgres:5432/tubedeck}
+      DIRECT_URL: ${DIRECT_URL:-postgresql://tubedeck:tubedeck@postgres:5432/tubedeck}
+      PORT: 4004
+      LOG_LEVEL: info
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      OPENAI_MODEL: ${OPENAI_MODEL:-gpt-4o-mini}
+    ports:
+      - "4004:4004"
+    depends_on:
+      - postgres
+
+  analytics-service:
+    build:
+      context: ./services/analytics-service
+      dockerfile: Dockerfile
+    environment:
+      PORT: 4005
+      LOG_LEVEL: info
+      VIDEO_SERVICE_URL: http://video-service:4003
+      QUEUE_SERVICE_URL: http://queue-service:4002
+    ports:
+      - "4005:4005"
+    depends_on:
+      - video-service
+      - queue-service
+
+  gateway:
+    build:
+      context: ./apps/gateway
+      dockerfile: Dockerfile
+    environment:
+      PORT: 4000
+      LOG_LEVEL: info
+      AUTH_SERVICE_URL: http://auth-service:4001
+      QUEUE_SERVICE_URL: http://queue-service:4002
+      VIDEO_SERVICE_URL: http://video-service:4003
+      ANALYSIS_SERVICE_URL: http://analysis-service:4004
+      ANALYTICS_SERVICE_URL: http://analytics-service:4005
+    ports:
+      - "4000:4000"
+    depends_on:
+      - auth-service
+      - queue-service
+      - video-service
+      - analysis-service
+      - analytics-service
+
+  web:
+    build:
+      context: ./apps/web
+      dockerfile: Dockerfile
+    environment:
+      # Browser uses localhost; Auth.js needs a stable public URL for OAuth
+      AUTH_URL: ${AUTH_URL:-http://localhost:3000}
+      NEXTAUTH_URL: ${NEXTAUTH_URL:-http://localhost:3000}
+      AUTH_SECRET: ${AUTH_SECRET:-change-me-use-openssl-rand-base64-32-for-real-secret}
+      AUTH_GOOGLE_ID: ${AUTH_GOOGLE_ID:-}
+      AUTH_GOOGLE_SECRET: ${AUTH_GOOGLE_SECRET:-}
+      # Must be reachable inside this container — do not use 127.0.0.1 (that is the web container itself).
+      AUTH_SERVICE_URL: http://auth-service:4001
+      GATEWAY_URL: http://gateway:4000
+    ports:
+      - "3000:3000"
+    depends_on:
+      - gateway
+      - auth-service
+
+volumes:
+  tubedeck_pg:
